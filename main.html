@@ -53,11 +53,14 @@ function SpectrumToRGBByWavelength(x) {
 
 
 
-
+tick_len = 100; // ms
 track_len = 51
 init_pos = 25
 tape = '000000000000000000000000000000000000000000000000000'
-runlength = 107 // in 
+runlength = 107
+var border = [0, 0, 0];
+var state, num_symbols
+Colors = {};
 
 Delta = {
 	A0: [1, 'r', 'B'],
@@ -72,18 +75,246 @@ Delta = {
 
 Machine = { // By convention, halting state = 'H'. You can change this if you really want to.
 	alphabet: ['0', '1'],
-	states: ['A', 'B', 'C', 'D'], // Not counting halting state.
+	states: ['A', 'B', 'C', 'D', 'H'],
 	init_state: 'A',
 	halt_state: 'H',
 	delta: Delta,
-	blank: '0'
+	blank: '0' // should be first character of alphabet
 }
 
+
+// Coloring: Halting state is black, blank symbol is white. Everything else is a color. 
+function set_colors() {
+	Colors[Machine.halt_state] = [0, 0, 0];
+	Colors[Machine.blank] = [255, 255, 255];
+	for(var i=1; i<Machine.alphabet.length; i++) {
+		Colors[Machine.alphabet[i]] = SpectrumToRGBByWavelength( (i-1) / (num_symbols-2) );
+	}
+	for(var i=0; i<Machine.states.length; i++) {
+		Colors[Machine.states[i]] = SpectrumToRGBByWavelength( (Machine.alphabet.length-1+i) / (num_symbols-2) );
+	}
+	//console.log(SpectrumToRGBByWavelength( (Machine.alphabet.length-1+Machine.states.length) / (num_symbols-2) ))
+}
+
+
+function tile_at(x, y, dx, dy) {
+	return ((y*4+dy)*4*image_data.width)+(x*4+dx)*4
+}
+
+function set_sq(pos, color) {
+	image_data.data[pos] = color[0];		// R
+	image_data.data[pos+1] = color[1];	// G
+	image_data.data[pos+2] = color[2];	// B
+	image_data.data[pos+3] = 255;				// Transparency
+}
+
+/*
+x a a x
+x a a x
+x a a x
+x a a x
+*/
+function set_a(x, y, letter) {
+	for(var i=0; i<4; i++) {
+		set_sq(tile_at(x, y, 0, i), border);
+		set_sq(tile_at(x, y, 1, i), Colors[letter]);
+		set_sq(tile_at(x, y, 2, i), Colors[letter]);
+		set_sq(tile_at(x, y, 3, i), border);
+	}
+}
+
+/*
+dir = r
+x a a x
+p a p x
+p p a x
+x a p x
+
+dir = l
+x a a x
+x a p p
+x p a p
+x a p x
+*/
+function set_b(x, y, letter, state, dir) {
+	if(dir == 'r') {
+		set_sq(tile_at(x, y, 0, 0), border);
+		set_sq(tile_at(x, y, 1, 0), Colors[letter]);
+		set_sq(tile_at(x, y, 2, 0), Colors[letter]);
+		set_sq(tile_at(x, y, 3, 0), border);
+	
+		set_sq(tile_at(x, y, 0, 1), Colors[state]);
+		set_sq(tile_at(x, y, 1, 1), Colors[letter]);
+		set_sq(tile_at(x, y, 2, 1), Colors[state]);
+		set_sq(tile_at(x, y, 3, 1), border);
+	
+		set_sq(tile_at(x, y, 0, 2), Colors[state]);
+		set_sq(tile_at(x, y, 1, 2), Colors[state]);
+		set_sq(tile_at(x, y, 2, 2), Colors[letter]);
+		set_sq(tile_at(x, y, 3, 2), border);
+	
+		set_sq(tile_at(x, y, 0, 3), border);
+		set_sq(tile_at(x, y, 1, 3), Colors[letter]);
+		set_sq(tile_at(x, y, 2, 3), Colors[state]);
+		set_sq(tile_at(x, y, 3, 3), border);
+	}
+	else {
+		set_sq(tile_at(x, y, 0, 0), border);
+		set_sq(tile_at(x, y, 1, 0), Colors[letter]);
+		set_sq(tile_at(x, y, 2, 0), Colors[letter]);
+		set_sq(tile_at(x, y, 3, 0), border);
+	
+		set_sq(tile_at(x, y, 0, 1), border);
+		set_sq(tile_at(x, y, 1, 1), Colors[letter]);
+		set_sq(tile_at(x, y, 2, 1), Colors[state]);
+		set_sq(tile_at(x, y, 3, 1), Colors[state]);
+	
+		set_sq(tile_at(x, y, 0, 2), border);
+		set_sq(tile_at(x, y, 1, 2), Colors[state]);
+		set_sq(tile_at(x, y, 2, 2), Colors[letter]);
+		set_sq(tile_at(x, y, 3, 2), Colors[state]);
+	
+		set_sq(tile_at(x, y, 0, 3), border);
+		set_sq(tile_at(x, y, 1, 3), Colors[letter]);
+		set_sq(tile_at(x, y, 2, 3), Colors[state]);
+		set_sq(tile_at(x, y, 3, 3), border);
+	}
+}
+
+/*
+dir = r
+x q a x
+x a q p
+x b p p
+x b b x
+
+dir = l
+x q a x
+p a q x
+p b p x
+x b b x
+*/
+
+function set_c(x, y, letter1, letter2, state1, state2) { // a, b, q, p
+	if(dir == 'r') {	
+		set_sq(tile_at(x, y, 0, 0), border);
+		set_sq(tile_at(x, y, 1, 0), Colors[state1]);
+		set_sq(tile_at(x, y, 2, 0), Colors[letter1]);
+		set_sq(tile_at(x, y, 3, 0), border);
+	
+		set_sq(tile_at(x, y, 0, 1), border);
+		set_sq(tile_at(x, y, 1, 1), Colors[letter1]);
+		set_sq(tile_at(x, y, 2, 1), Colors[state1]);
+		set_sq(tile_at(x, y, 3, 1), Colors[state2]);
+
+		set_sq(tile_at(x, y, 0, 2), border);
+		set_sq(tile_at(x, y, 1, 2), Colors[letter2]);
+		set_sq(tile_at(x, y, 2, 2), Colors[state2]);
+		set_sq(tile_at(x, y, 3, 2), Colors[state2]);
+	
+		set_sq(tile_at(x, y, 0, 3), border);
+		set_sq(tile_at(x, y, 1, 3), Colors[letter2]);
+		set_sq(tile_at(x, y, 2, 3), Colors[letter2]);
+		set_sq(tile_at(x, y, 3, 3), border);
+	}
+	else {
+		set_sq(tile_at(x, y, 0, 0), border);
+		set_sq(tile_at(x, y, 1, 0), Colors[state1]);
+		set_sq(tile_at(x, y, 2, 0), Colors[letter1]);
+		set_sq(tile_at(x, y, 3, 0), border);
+	
+		set_sq(tile_at(x, y, 0, 1), Colors[state2]);
+		set_sq(tile_at(x, y, 1, 1), Colors[letter1]);
+		set_sq(tile_at(x, y, 2, 1), Colors[state1]);
+		set_sq(tile_at(x, y, 3, 1), border);
+
+		set_sq(tile_at(x, y, 0, 2), Colors[state2]);
+		set_sq(tile_at(x, y, 1, 2), Colors[letter2]);
+		set_sq(tile_at(x, y, 2, 2), Colors[state2]);
+		set_sq(tile_at(x, y, 3, 2), border);
+	
+		set_sq(tile_at(x, y, 0, 3), border);
+		set_sq(tile_at(x, y, 1, 3), Colors[letter2]);
+		set_sq(tile_at(x, y, 2, 3), Colors[letter2]);
+		set_sq(tile_at(x, y, 3, 3), border);
+	}
+}
+
+function set_d(x, y, letter, state) {
+	set_sq(tile_at(x, y, 0, 0), border);
+	set_sq(tile_at(x, y, 1, 0), border);
+	set_sq(tile_at(x, y, 2, 0), border);
+	set_sq(tile_at(x, y, 3, 0), border);
+
+	set_sq(tile_at(x, y, 0, 1), border);
+	set_sq(tile_at(x, y, 1, 1), Colors[state]);
+	set_sq(tile_at(x, y, 2, 1), Colors[letter]);
+	set_sq(tile_at(x, y, 3, 1), border);
+
+	set_sq(tile_at(x, y, 0, 2), border);
+	set_sq(tile_at(x, y, 1, 2), Colors[state]);
+	set_sq(tile_at(x, y, 2, 2), Colors[letter]);
+	set_sq(tile_at(x, y, 3, 2), border);
+
+	set_sq(tile_at(x, y, 0, 3), border);
+	set_sq(tile_at(x, y, 1, 3), Colors[state]);
+	set_sq(tile_at(x, y, 2, 3), Colors[letter]);
+	set_sq(tile_at(x, y, 3, 3), border);
+}
+
+function set_e(x, y, letter) {
+	set_sq(tile_at(x, y, 0, 0), border);
+	set_sq(tile_at(x, y, 1, 0), border);
+	set_sq(tile_at(x, y, 2, 0), border);
+	set_sq(tile_at(x, y, 3, 0), border);
+
+	set_sq(tile_at(x, y, 0, 1), border);
+	set_sq(tile_at(x, y, 1, 1), Colors[letter]);
+	set_sq(tile_at(x, y, 2, 1), Colors[letter]);
+	set_sq(tile_at(x, y, 3, 1), border);
+
+	set_sq(tile_at(x, y, 0, 2), border);
+	set_sq(tile_at(x, y, 1, 2), Colors[letter]);
+	set_sq(tile_at(x, y, 2, 2), Colors[letter]);
+	set_sq(tile_at(x, y, 3, 2), border);
+
+	set_sq(tile_at(x, y, 0, 3), border);
+	set_sq(tile_at(x, y, 1, 3), Colors[letter]);
+	set_sq(tile_at(x, y, 2, 3), Colors[letter]);
+	set_sq(tile_at(x, y, 3, 3), border);
+}
+
+
+
+var canvas, ctx, image_data;
 function draw() {
 	canvas = document.getElementById('canvas');
 	ctx = canvas.getContext('2d');
 	canvas.height = 4*runlength;
 	canvas.width = 4*track_len;
+	image_data = ctx.getImageData(0, 0, canvas.width, canvas.height);
+	state = Machine.init_state;
+	num_symbols = Machine.alphabet.length + Machine.states.length;
+	set_colors();
+	
+	//console.log(image_data)
+	for(var i=0; i<tape.length; i++) {
+		if(i == init_pos) {
+			set_d(i, 0, tape[i], Machine.init_state);
+		}
+		else {
+			set_e(i, 0, tape[i]);
+		}
+	}
+	
+	ctx.putImageData(image_data, 0, 0);
+	console.log(ctx.getImageData(0, 0, canvas.width, canvas.height))
+
+	setTimeout(tick, tick_len);
+}
+
+function tick() {
+	
 }
 
 </script>
