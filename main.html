@@ -3,13 +3,51 @@
 <script>
 
 
+tick_len = 10; // ms
+track_len = 51;
+pos = 25;
+tape = '000000000000000000000000000000000000000000000000000'.split('');
+run_length = 108;
+var border = [0, 0, 0];
+
+Delta = { // fixme transition is object
+	A0: [1, 'r', 'B'],
+	A1: [1, 'l', 'B'],
+	B0: [1, 'l', 'A'],
+	B1: [0, 'l', 'C'],
+	C0: [1, 'r', 'H'],
+	C1: [1, 'l', 'D'],
+	D0: [1, 'r', 'D'],
+	D1: [0, 'r', 'A']
+}
+
+Machine = { // By convention, halting state = 'H'. You can change this if you really want to.
+	alphabet: ['0', '1'],
+	states: ['A', 'B', 'C', 'D', 'H'],
+	init_state: 'A',
+	halt_state: 'H',
+	delta: Delta,
+	blank: '0' // should be first character of alphabet
+}
+
+
+
+
+
+
+
+ticks = 0;
+var state, num_symbols;
+var canvas, ctx, image_data;
+Colors = {};
+
+
 // Spectrum code by Bill Gibbons, http://scoundrelspoint.com/spectrum/index.html
 var c = 3.0e17;	 // speed of light in nm/s
 var min_wavelen = 380;
 var max_wavelen = 700;
 min_freq = c / max_wavelen;
 max_freq = c / min_wavelen;
-
 
 function WavelengthToRGB(w, no_falloff) {
 	if (w < min_wavelen || w > max_wavelen)
@@ -53,34 +91,6 @@ function SpectrumToRGBByWavelength(x) {
 
 
 
-tick_len = 100; // ms
-track_len = 51
-init_pos = 25
-tape = '000000000000000000000000000000000000000000000000000'
-runlength = 107
-var border = [0, 0, 0];
-var state, num_symbols
-Colors = {};
-
-Delta = {
-	A0: [1, 'r', 'B'],
-	A1: [1, 'l', 'B'],
-	B0: [1, 'l', 'A'],
-	B1: [0, 'l', 'C'],
-	C0: [1, 'r', 'H'],
-	C1: [1, 'l', 'D'],
-	D0: [1, 'r', 'D'],
-	D1: [0, 'r', 'A']
-}
-
-Machine = { // By convention, halting state = 'H'. You can change this if you really want to.
-	alphabet: ['0', '1'],
-	states: ['A', 'B', 'C', 'D', 'H'],
-	init_state: 'A',
-	halt_state: 'H',
-	delta: Delta,
-	blank: '0' // should be first character of alphabet
-}
 
 
 // Coloring: Halting state is black, blank symbol is white. Everything else is a color. 
@@ -195,7 +205,7 @@ p b p x
 x b b x
 */
 
-function set_c(x, y, letter1, letter2, state1, state2) { // a, b, q, p
+function set_c(x, y, letter1, letter2, state1, state2, dir) { // a, b, q, p
 	if(dir == 'r') {	
 		set_sq(tile_at(x, y, 0, 0), border);
 		set_sq(tile_at(x, y, 1, 0), Colors[state1]);
@@ -284,22 +294,42 @@ function set_e(x, y, letter) {
 	set_sq(tile_at(x, y, 3, 3), border);
 }
 
+function set_halt(x, y, letter) {
+	set_sq(tile_at(x, y, 0, 0), border);
+	set_sq(tile_at(x, y, 1, 0), Colors[letter]);
+	set_sq(tile_at(x, y, 2, 0), Colors[letter]);
+	set_sq(tile_at(x, y, 3, 0), border);
+
+	set_sq(tile_at(x, y, 0, 1), border);
+	set_sq(tile_at(x, y, 1, 1), Colors[letter]);
+	set_sq(tile_at(x, y, 2, 1), Colors[letter]);
+	set_sq(tile_at(x, y, 3, 1), border);
+
+	set_sq(tile_at(x, y, 0, 2), border);
+	set_sq(tile_at(x, y, 1, 2), Colors[letter]);
+	set_sq(tile_at(x, y, 2, 2), Colors[letter]);
+	set_sq(tile_at(x, y, 3, 2), border);
+
+	set_sq(tile_at(x, y, 0, 3), border);
+	set_sq(tile_at(x, y, 1, 3), border);
+	set_sq(tile_at(x, y, 2, 3), border);
+	set_sq(tile_at(x, y, 3, 3), border);
+}
 
 
-var canvas, ctx, image_data;
+
 function draw() {
 	canvas = document.getElementById('canvas');
 	ctx = canvas.getContext('2d');
-	canvas.height = 4*runlength;
+	canvas.height = 4*(run_length+1);
 	canvas.width = 4*track_len;
 	image_data = ctx.getImageData(0, 0, canvas.width, canvas.height);
 	state = Machine.init_state;
 	num_symbols = Machine.alphabet.length + Machine.states.length;
 	set_colors();
 	
-	//console.log(image_data)
 	for(var i=0; i<tape.length; i++) {
-		if(i == init_pos) {
+		if(i == pos) {
 			set_d(i, 0, tape[i], Machine.init_state);
 		}
 		else {
@@ -308,13 +338,51 @@ function draw() {
 	}
 	
 	ctx.putImageData(image_data, 0, 0);
-	console.log(ctx.getImageData(0, 0, canvas.width, canvas.height))
 
+	++ticks;
 	setTimeout(tick, tick_len);
 }
 
+
 function tick() {
+	if(state == Machine.halt_state) {
+		var next = [Machine.blank, 'o', state];
+	}
+	else {
+		var next = Machine.delta[state + tape[pos]];
+	}
+	for(var i=0; i<tape.length; i++) {
+		if(i == pos-1 && next[1] == 'l') {
+			set_b(i, ticks, tape[i], next[2], 'l');
+		}
+		else if(i == pos) {
+			if(state != Machine.halt_state) {
+				set_c(i, ticks, tape[i], next[0], state, next[2], next[1]);
+			}
+			else {
+				set_halt(i, ticks, tape[i]);
+			}
+		}
+		else if(i == pos+1 && next[1] == 'r') {
+			set_b(i, ticks, tape[i], next[2], 'r');
+		}
+		else {
+			set_a(i, ticks, tape[i]);
+		}
+	}
+	ctx.putImageData(image_data, 0, 0);
+	++ticks;
+	tape[pos] = next[0];
+	state = next[2];
 	
+	// todo stay within track
+	if(next[1] == 'r') {
+		++pos;
+	}
+	else if(next[1] == 'l') {
+		--pos;
+	}
+	if(ticks<=run_length) setTimeout(tick, tick_len);
 }
 
 </script>
