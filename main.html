@@ -11,17 +11,18 @@ run_length = 108;
 var border_color = [0, 0, 0]; // R, G, B
 
 
-function transition(sym, dir, state) {return {sym:sym, dir:dir, state:state};};
+function transition(letter, dir, state) {return {letter:letter, dir:dir, state:state};};
 
-bb4_delta = { // fixme transition is object
-	A0: [1, 'r', 'B'],
-	A1: [1, 'l', 'B'],
-	B0: [1, 'l', 'A'],
-	B1: [0, 'l', 'C'],
-	C0: [1, 'r', 'H'],
-	C1: [1, 'l', 'D'],
-	D0: [1, 'r', 'D'],
-	D1: [0, 'r', 'A']
+t = transition; // shortcut
+bb4_delta = {
+	A0: t(1, 'r', 'B'),
+	A1: t(1, 'l', 'B'),
+	B0: t(1, 'l', 'A'),
+	B1: t(0, 'l', 'C'),
+	C0: t(1, 'r', 'H'),
+	C1: t(1, 'l', 'D'),
+	D0: t(1, 'r', 'D'),
+	D1: t(0, 'r', 'A')
 }
 
 bb4 = { // By convention, halting state = 'H'. You can change this if you really want to.
@@ -361,19 +362,19 @@ function tick() {
 		var next = Machine.delta[state + tape[pos]];
 	}
 	for(var i=0; i<tape.length; i++) {
-		if(i == pos-1 && next[1] == 'l') {
-			set_b(i, ticks, tape[i], next[2], 'l');
+		if(i == pos-1 && next.dir == 'l') {
+			set_b(i, ticks, tape[i], next.state, 'l');
 		}
 		else if(i == pos) {
 			if(state != Machine.halt_state) {
-				set_c(i, ticks, tape[i], next[0], state, next[2], next[1]);
+				set_c(i, ticks, tape[i], next.letter, state, next.state, next[1]);
 			}
 			else {
 				set_halt(i, ticks, tape[i]);
 			}
 		}
-		else if(i == pos+1 && next[1] == 'r') {
-			set_b(i, ticks, tape[i], next[2], 'r');
+		else if(i == pos+1 && next.dir == 'r') {
+			set_b(i, ticks, tape[i], next.state, 'r');
 		}
 		else {
 			set_a(i, ticks, tape[i]);
@@ -381,14 +382,14 @@ function tick() {
 	}
 	ctx.putImageData(image_data, 0, 0);
 	++ticks;
-	tape[pos] = next[0];
-	state = next[2];
+	tape[pos] = next.letter;
+	state = next.state;
 	
 	// todo stay within track
-	if(next[1] == 'r') {
+	if(next.dir == 'r') {
 		++pos;
 	}
-	else if(next[1] == 'l') {
+	else if(next.dir == 'l') {
 		--pos;
 	}
 	if(ticks<=run_length) setTimeout(tick, tick_len);
