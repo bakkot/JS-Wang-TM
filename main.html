@@ -4,16 +4,19 @@
 
 
 tick_len = 10; // ms
-track_len = 51;
-pos = 25;
-tape = '000000000000000000000000000000000000000000000000000'.split('');
+track_len = 13e4;
+pos = 7e4;
+//tape = '000000000000000000000000000000000000000000000000000'.split('');
+tape = []; for(var i=0; i<track_len; i++) tape[i] = '0';
+console.log(tape);
 run_length = 108;
 var border_color = [0, 0, 0]; // R, G, B
 
 
 function transition(letter, dir, state) {return {letter:letter, dir:dir, state:state};};
-
 t = transition; // shortcut
+
+// By convention, halting state = 'H'. You can change this if you really want to.
 bb4_delta = {
 	A0: t(1, 'r', 'B'),
 	A1: t(1, 'l', 'B'),
@@ -25,7 +28,7 @@ bb4_delta = {
 	D1: t(0, 'r', 'A')
 }
 
-bb4 = { // By convention, halting state = 'H'. You can change this if you really want to.
+bb4 = {
 	alphabet: ['0', '1'],
 	states: ['A', 'B', 'C', 'D', 'H'],
 	init_state: 'A',
@@ -36,11 +39,29 @@ bb4 = { // By convention, halting state = 'H'. You can change this if you really
 
 
 bb5_delta = {
+	A0: t(1, 'r', 'B'),
+	A1: t(1, 'l', 'C'),
+	B0: t(1, 'r', 'C'),
+	B1: t(1, 'r', 'B'),
+	C0: t(1, 'r', 'D'),
+	C1: t(0, 'l', 'E'),
+	D0: t(1, 'l', 'A'),
+	D1: t(1, 'l', 'D'),
+	E0: t(1, 'r', 'H'),
+	E1: t(0, 'l', 'A')
+}
 
+bb5 = {
+	alphabet: ['0', '1'],
+	states: ['A', 'B', 'C', 'D', 'E', 'H'],
+	init_state: 'A',
+	halt_state: 'H',
+	delta: bb5_delta,
+	blank: '0' // should be first character of alphabet
 }
 
 
-Machine = bb4;
+Machine = bb5;
 
 
 
@@ -356,7 +377,7 @@ function draw() {
 
 function tick() {
 	if(state == Machine.halt_state) {
-		var next = [Machine.blank, 'o', state];
+		var next = t(Machine.blank, 'o', state);
 	}
 	else {
 		var next = Machine.delta[state + tape[pos]];
