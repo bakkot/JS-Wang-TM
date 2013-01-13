@@ -4,12 +4,6 @@
 
 
 tick_len = 10; // ms
-track_len = 1e2;
-pos = 5e1;
-//tape = '000000000000000000000000000000000000000000000000000'.split('');
-tape = []; for(var i=0; i<track_len; i++) tape[i] = '0';
-console.log(tape);
-run_length = 1080;
 var border_color = [0, 0, 0]; // R, G, B
 
 
@@ -34,7 +28,10 @@ bb4 = {
 	init_state: 'A',
 	halt_state: 'H',
 	delta: bb4_delta,
-	blank: '0' // should be first character of alphabet
+	blank: '0', // should be first character of alphabet
+	run_len: 108,
+	init_pos: 25,
+	tape_len: 50
 }
 
 
@@ -57,11 +54,19 @@ bb5 = {
 	init_state: 'A',
 	halt_state: 'H',
 	delta: bb5_delta,
-	blank: '0' // should be first character of alphabet
+	blank: '0', // should be first character of alphabet
+	run_len: 7000,
+	init_pos: 150,
+	tape_len: 200
 }
 
 
-Machine = bb5;
+Machine = bb4;
+run_len = Machine.run_len;
+tape_len = Machine.tape_len;
+pos = Machine.init_pos;
+//tape = '000000000000000000000000000000000000000000000000000'.split('');
+tape = []; for(var i=0; i<tape_len; i++) tape[i] = '0';
 
 
 
@@ -101,9 +106,9 @@ function WavelengthToRGB(w, no_falloff) {
 	else							s = 1;
 
 	// Gamma adjust.
-	return [ Math.round(Math.pow(rgb[0]*s, gamma) * 256),
-					 Math.round(Math.pow(rgb[1]*s, gamma) * 256),
-					 Math.round(Math.pow(rgb[2]*s, gamma) * 256) ];
+	return [ Math.floor(Math.pow(rgb[0]*s, gamma) * 256),
+					 Math.floor(Math.pow(rgb[1]*s, gamma) * 256),
+					 Math.floor(Math.pow(rgb[2]*s, gamma) * 256) ];
 }
 
 function SpectrumToRGBMix(x, wmult, fmult, no_falloff) {
@@ -138,15 +143,25 @@ function set_colors() {
 }
 
 
-function tile_at(x, y, dx, dy) {
+function tile_at_old(x, y, dx, dy) {
 	return ((y*4+dy)*4*image_data.width)+(x*4+dx)*4
 }
 
-function set_sq(pos, color) {
+function set_sq_old(pos, color) {
 	image_data.data[pos] = color[0];		// R
 	image_data.data[pos+1] = color[1];	// G
 	image_data.data[pos+2] = color[2];	// B
 	image_data.data[pos+3] = 255;				// Transparency
+}
+
+
+function tile_at(x, y, dx, dy) {
+	return [x*4 + dx, y*4 + dy];
+}
+
+function set_sq(pos, color) {
+	ctx.fillStyle = 'rgb(' + color[0] + ',' + color[1] + ',' + color[2] + ')';
+	ctx.fillRect(pos[0], pos[1], 1, 1);
 }
 
 /*
@@ -352,9 +367,9 @@ function set_halt(x, y, letter) {
 function draw() {
 	canvas = document.getElementById('canvas');
 	ctx = canvas.getContext('2d');
-	canvas.height = 4*(run_length+1);
-	canvas.width = 4*track_len;
-	image_data = ctx.getImageData(0, 0, canvas.width, canvas.height);
+	canvas.height = 4*(run_len+1);
+	canvas.width = 4*tape_len;
+	//image_data = ctx.getImageData(0, 0, canvas.width, canvas.height);
 	state = Machine.init_state;
 	num_symbols = Machine.alphabet.length + Machine.states.length;
 	set_colors();
@@ -368,7 +383,7 @@ function draw() {
 		}
 	}
 	
-	ctx.putImageData(image_data, 0, 0);
+	//ctx.putImageData(image_data, 0, 0);
 
 	++ticks;
 	setTimeout(tick, tick_len);
@@ -401,19 +416,19 @@ function tick() {
 			set_a(i, ticks, tape[i]);
 		}
 	}
-	ctx.putImageData(image_data, 0, 0);
+	//ctx.putImageData(image_data, 0, 0);
 	++ticks;
 	tape[pos] = next.letter;
 	state = next.state;
 	
-	// todo stay within track
+	// todo stay within tape
 	if(next.dir == 'r') {
 		++pos;
 	}
 	else if(next.dir == 'l') {
 		--pos;
 	}
-	if(ticks<=run_length) setTimeout(tick, tick_len);
+	if(ticks<=run_len) setTimeout(tick, tick_len);
 }
 
 </script>
