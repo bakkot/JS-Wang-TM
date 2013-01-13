@@ -8,9 +8,12 @@ track_len = 51;
 pos = 25;
 tape = '000000000000000000000000000000000000000000000000000'.split('');
 run_length = 108;
-var border = [0, 0, 0];
+var border_color = [0, 0, 0]; // R, G, B
 
-Delta = { // fixme transition is object
+
+function transition(sym, dir, state) {return {sym:sym, dir:dir, state:state};};
+
+bb4_delta = { // fixme transition is object
 	A0: [1, 'r', 'B'],
 	A1: [1, 'l', 'B'],
 	B0: [1, 'l', 'A'],
@@ -21,16 +24,22 @@ Delta = { // fixme transition is object
 	D1: [0, 'r', 'A']
 }
 
-Machine = { // By convention, halting state = 'H'. You can change this if you really want to.
+bb4 = { // By convention, halting state = 'H'. You can change this if you really want to.
 	alphabet: ['0', '1'],
 	states: ['A', 'B', 'C', 'D', 'H'],
 	init_state: 'A',
 	halt_state: 'H',
-	delta: Delta,
+	delta: bb4_delta,
 	blank: '0' // should be first character of alphabet
 }
 
 
+bb5_delta = {
+
+}
+
+
+Machine = bb4;
 
 
 
@@ -126,10 +135,10 @@ x a a x
 */
 function set_a(x, y, letter) {
 	for(var i=0; i<4; i++) {
-		set_sq(tile_at(x, y, 0, i), border);
+		set_sq(tile_at(x, y, 0, i), border_color);
 		set_sq(tile_at(x, y, 1, i), Colors[letter]);
 		set_sq(tile_at(x, y, 2, i), Colors[letter]);
-		set_sq(tile_at(x, y, 3, i), border);
+		set_sq(tile_at(x, y, 3, i), border_color);
 	}
 }
 
@@ -148,46 +157,46 @@ x a p x
 */
 function set_b(x, y, letter, state, dir) {
 	if(dir == 'r') {
-		set_sq(tile_at(x, y, 0, 0), border);
+		set_sq(tile_at(x, y, 0, 0), border_color);
 		set_sq(tile_at(x, y, 1, 0), Colors[letter]);
 		set_sq(tile_at(x, y, 2, 0), Colors[letter]);
-		set_sq(tile_at(x, y, 3, 0), border);
+		set_sq(tile_at(x, y, 3, 0), border_color);
 	
 		set_sq(tile_at(x, y, 0, 1), Colors[state]);
 		set_sq(tile_at(x, y, 1, 1), Colors[letter]);
 		set_sq(tile_at(x, y, 2, 1), Colors[state]);
-		set_sq(tile_at(x, y, 3, 1), border);
+		set_sq(tile_at(x, y, 3, 1), border_color);
 	
 		set_sq(tile_at(x, y, 0, 2), Colors[state]);
 		set_sq(tile_at(x, y, 1, 2), Colors[state]);
 		set_sq(tile_at(x, y, 2, 2), Colors[letter]);
-		set_sq(tile_at(x, y, 3, 2), border);
+		set_sq(tile_at(x, y, 3, 2), border_color);
 	
-		set_sq(tile_at(x, y, 0, 3), border);
+		set_sq(tile_at(x, y, 0, 3), border_color);
 		set_sq(tile_at(x, y, 1, 3), Colors[letter]);
 		set_sq(tile_at(x, y, 2, 3), Colors[state]);
-		set_sq(tile_at(x, y, 3, 3), border);
+		set_sq(tile_at(x, y, 3, 3), border_color);
 	}
 	else {
-		set_sq(tile_at(x, y, 0, 0), border);
+		set_sq(tile_at(x, y, 0, 0), border_color);
 		set_sq(tile_at(x, y, 1, 0), Colors[letter]);
 		set_sq(tile_at(x, y, 2, 0), Colors[letter]);
-		set_sq(tile_at(x, y, 3, 0), border);
+		set_sq(tile_at(x, y, 3, 0), border_color);
 	
-		set_sq(tile_at(x, y, 0, 1), border);
+		set_sq(tile_at(x, y, 0, 1), border_color);
 		set_sq(tile_at(x, y, 1, 1), Colors[letter]);
 		set_sq(tile_at(x, y, 2, 1), Colors[state]);
 		set_sq(tile_at(x, y, 3, 1), Colors[state]);
 	
-		set_sq(tile_at(x, y, 0, 2), border);
+		set_sq(tile_at(x, y, 0, 2), border_color);
 		set_sq(tile_at(x, y, 1, 2), Colors[state]);
 		set_sq(tile_at(x, y, 2, 2), Colors[letter]);
 		set_sq(tile_at(x, y, 3, 2), Colors[state]);
 	
-		set_sq(tile_at(x, y, 0, 3), border);
+		set_sq(tile_at(x, y, 0, 3), border_color);
 		set_sq(tile_at(x, y, 1, 3), Colors[letter]);
 		set_sq(tile_at(x, y, 2, 3), Colors[state]);
-		set_sq(tile_at(x, y, 3, 3), border);
+		set_sq(tile_at(x, y, 3, 3), border_color);
 	}
 }
 
@@ -207,113 +216,113 @@ x b b x
 
 function set_c(x, y, letter1, letter2, state1, state2, dir) { // a, b, q, p
 	if(dir == 'r') {	
-		set_sq(tile_at(x, y, 0, 0), border);
+		set_sq(tile_at(x, y, 0, 0), border_color);
 		set_sq(tile_at(x, y, 1, 0), Colors[state1]);
 		set_sq(tile_at(x, y, 2, 0), Colors[letter1]);
-		set_sq(tile_at(x, y, 3, 0), border);
+		set_sq(tile_at(x, y, 3, 0), border_color);
 	
-		set_sq(tile_at(x, y, 0, 1), border);
+		set_sq(tile_at(x, y, 0, 1), border_color);
 		set_sq(tile_at(x, y, 1, 1), Colors[letter1]);
 		set_sq(tile_at(x, y, 2, 1), Colors[state1]);
 		set_sq(tile_at(x, y, 3, 1), Colors[state2]);
 
-		set_sq(tile_at(x, y, 0, 2), border);
+		set_sq(tile_at(x, y, 0, 2), border_color);
 		set_sq(tile_at(x, y, 1, 2), Colors[letter2]);
 		set_sq(tile_at(x, y, 2, 2), Colors[state2]);
 		set_sq(tile_at(x, y, 3, 2), Colors[state2]);
 	
-		set_sq(tile_at(x, y, 0, 3), border);
+		set_sq(tile_at(x, y, 0, 3), border_color);
 		set_sq(tile_at(x, y, 1, 3), Colors[letter2]);
 		set_sq(tile_at(x, y, 2, 3), Colors[letter2]);
-		set_sq(tile_at(x, y, 3, 3), border);
+		set_sq(tile_at(x, y, 3, 3), border_color);
 	}
 	else {
-		set_sq(tile_at(x, y, 0, 0), border);
+		set_sq(tile_at(x, y, 0, 0), border_color);
 		set_sq(tile_at(x, y, 1, 0), Colors[state1]);
 		set_sq(tile_at(x, y, 2, 0), Colors[letter1]);
-		set_sq(tile_at(x, y, 3, 0), border);
+		set_sq(tile_at(x, y, 3, 0), border_color);
 	
 		set_sq(tile_at(x, y, 0, 1), Colors[state2]);
 		set_sq(tile_at(x, y, 1, 1), Colors[letter1]);
 		set_sq(tile_at(x, y, 2, 1), Colors[state1]);
-		set_sq(tile_at(x, y, 3, 1), border);
+		set_sq(tile_at(x, y, 3, 1), border_color);
 
 		set_sq(tile_at(x, y, 0, 2), Colors[state2]);
 		set_sq(tile_at(x, y, 1, 2), Colors[letter2]);
 		set_sq(tile_at(x, y, 2, 2), Colors[state2]);
-		set_sq(tile_at(x, y, 3, 2), border);
+		set_sq(tile_at(x, y, 3, 2), border_color);
 	
-		set_sq(tile_at(x, y, 0, 3), border);
+		set_sq(tile_at(x, y, 0, 3), border_color);
 		set_sq(tile_at(x, y, 1, 3), Colors[letter2]);
 		set_sq(tile_at(x, y, 2, 3), Colors[letter2]);
-		set_sq(tile_at(x, y, 3, 3), border);
+		set_sq(tile_at(x, y, 3, 3), border_color);
 	}
 }
 
 function set_d(x, y, letter, state) {
-	set_sq(tile_at(x, y, 0, 0), border);
-	set_sq(tile_at(x, y, 1, 0), border);
-	set_sq(tile_at(x, y, 2, 0), border);
-	set_sq(tile_at(x, y, 3, 0), border);
+	set_sq(tile_at(x, y, 0, 0), border_color);
+	set_sq(tile_at(x, y, 1, 0), border_color);
+	set_sq(tile_at(x, y, 2, 0), border_color);
+	set_sq(tile_at(x, y, 3, 0), border_color);
 
-	set_sq(tile_at(x, y, 0, 1), border);
+	set_sq(tile_at(x, y, 0, 1), border_color);
 	set_sq(tile_at(x, y, 1, 1), Colors[state]);
 	set_sq(tile_at(x, y, 2, 1), Colors[letter]);
-	set_sq(tile_at(x, y, 3, 1), border);
+	set_sq(tile_at(x, y, 3, 1), border_color);
 
-	set_sq(tile_at(x, y, 0, 2), border);
+	set_sq(tile_at(x, y, 0, 2), border_color);
 	set_sq(tile_at(x, y, 1, 2), Colors[state]);
 	set_sq(tile_at(x, y, 2, 2), Colors[letter]);
-	set_sq(tile_at(x, y, 3, 2), border);
+	set_sq(tile_at(x, y, 3, 2), border_color);
 
-	set_sq(tile_at(x, y, 0, 3), border);
+	set_sq(tile_at(x, y, 0, 3), border_color);
 	set_sq(tile_at(x, y, 1, 3), Colors[state]);
 	set_sq(tile_at(x, y, 2, 3), Colors[letter]);
-	set_sq(tile_at(x, y, 3, 3), border);
+	set_sq(tile_at(x, y, 3, 3), border_color);
 }
 
 function set_e(x, y, letter) {
-	set_sq(tile_at(x, y, 0, 0), border);
-	set_sq(tile_at(x, y, 1, 0), border);
-	set_sq(tile_at(x, y, 2, 0), border);
-	set_sq(tile_at(x, y, 3, 0), border);
+	set_sq(tile_at(x, y, 0, 0), border_color);
+	set_sq(tile_at(x, y, 1, 0), border_color);
+	set_sq(tile_at(x, y, 2, 0), border_color);
+	set_sq(tile_at(x, y, 3, 0), border_color);
 
-	set_sq(tile_at(x, y, 0, 1), border);
+	set_sq(tile_at(x, y, 0, 1), border_color);
 	set_sq(tile_at(x, y, 1, 1), Colors[letter]);
 	set_sq(tile_at(x, y, 2, 1), Colors[letter]);
-	set_sq(tile_at(x, y, 3, 1), border);
+	set_sq(tile_at(x, y, 3, 1), border_color);
 
-	set_sq(tile_at(x, y, 0, 2), border);
+	set_sq(tile_at(x, y, 0, 2), border_color);
 	set_sq(tile_at(x, y, 1, 2), Colors[letter]);
 	set_sq(tile_at(x, y, 2, 2), Colors[letter]);
-	set_sq(tile_at(x, y, 3, 2), border);
+	set_sq(tile_at(x, y, 3, 2), border_color);
 
-	set_sq(tile_at(x, y, 0, 3), border);
+	set_sq(tile_at(x, y, 0, 3), border_color);
 	set_sq(tile_at(x, y, 1, 3), Colors[letter]);
 	set_sq(tile_at(x, y, 2, 3), Colors[letter]);
-	set_sq(tile_at(x, y, 3, 3), border);
+	set_sq(tile_at(x, y, 3, 3), border_color);
 }
 
 function set_halt(x, y, letter) {
-	set_sq(tile_at(x, y, 0, 0), border);
+	set_sq(tile_at(x, y, 0, 0), border_color);
 	set_sq(tile_at(x, y, 1, 0), Colors[letter]);
 	set_sq(tile_at(x, y, 2, 0), Colors[letter]);
-	set_sq(tile_at(x, y, 3, 0), border);
+	set_sq(tile_at(x, y, 3, 0), border_color);
 
-	set_sq(tile_at(x, y, 0, 1), border);
+	set_sq(tile_at(x, y, 0, 1), border_color);
 	set_sq(tile_at(x, y, 1, 1), Colors[letter]);
 	set_sq(tile_at(x, y, 2, 1), Colors[letter]);
-	set_sq(tile_at(x, y, 3, 1), border);
+	set_sq(tile_at(x, y, 3, 1), border_color);
 
-	set_sq(tile_at(x, y, 0, 2), border);
+	set_sq(tile_at(x, y, 0, 2), border_color);
 	set_sq(tile_at(x, y, 1, 2), Colors[letter]);
 	set_sq(tile_at(x, y, 2, 2), Colors[letter]);
-	set_sq(tile_at(x, y, 3, 2), border);
+	set_sq(tile_at(x, y, 3, 2), border_color);
 
-	set_sq(tile_at(x, y, 0, 3), border);
-	set_sq(tile_at(x, y, 1, 3), border);
-	set_sq(tile_at(x, y, 2, 3), border);
-	set_sq(tile_at(x, y, 3, 3), border);
+	set_sq(tile_at(x, y, 0, 3), border_color);
+	set_sq(tile_at(x, y, 1, 3), border_color);
+	set_sq(tile_at(x, y, 2, 3), border_color);
+	set_sq(tile_at(x, y, 3, 3), border_color);
 }
 
 
