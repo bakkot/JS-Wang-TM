@@ -60,8 +60,56 @@ bb5 = {
 	tape_len: 200
 }
 
+bb6_delta = {
+	A0: t(1, 'r', 'B'),
+	A1: t(1, 'l', 'E'),
+	B0: t(1, 'r', 'C'),
+	B1: t(1, 'r', 'F'),
+	C0: t(1, 'l', 'D'),
+	C1: t(0, 'r', 'B'),
+	D0: t(1, 'r', 'E'),
+	D1: t(0, 'l', 'C'),
+	E0: t(1, 'l', 'A'),
+	E1: t(0, 'r', 'D'),
+	F0: t(1, 'l', 'H'),
+	F1: t(1, 'r', 'C')
+}
 
-Machine = bb4;
+bb6 = {
+	alphabet: ['0', '1'],
+	states: ['A', 'B', 'C', 'D', 'E', 'F', 'H'],
+	init_state: 'A',
+	halt_state: 'H',
+	delta: bb6_delta,
+	blank: '0', // should be first character of alphabet
+	run_len: 4000,
+	init_pos: 30,
+	tape_len: 200
+}
+
+
+w23_delta = {
+	A0: t(1, 'r', 'B'),
+	A1: t(2, 'l', 'A'),
+	A2: t(1, 'l', 'A'),
+	B0: t(2, 'l', 'A'),
+	B1: t(2, 'r', 'B'),
+	B2: t(0, 'r', 'A')
+}
+
+w23 = {
+	alphabet: ['0', '1', '2'],
+	states: ['A', 'B', 'H'],
+	init_state: 'A',
+	halt_state: 'H',
+	delta: w23_delta,
+	blank: '0', // should be first character of alphabet
+	run_len: 7000,
+	init_pos: 100,
+	tape_len: 200
+}
+
+Machine = bb6;
 run_len = Machine.run_len;
 tape_len = Machine.tape_len;
 pos = Machine.init_pos;
